@@ -13,7 +13,8 @@ import type { Subdivision } from 'tone/build/esm/core/type/Units';
 import { useModal } from './services/ModalContext';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExchange, faXmark, faPlus, faTrashCan, faPlay, faStop, faPause } from '@fortawesome/free-solid-svg-icons'; // Import specific icons
 const SequenceSection = styled(Box)(({theme}) => ({
   width: "100%",
   paddingBottom: "10px",
@@ -124,7 +125,7 @@ const TransportButton = styled(Button)(({theme}) => ({
 
 const TrackManagerButton = styled(Button)(({theme}) => ({
   width: "auto",
-  padding: "8px",
+  padding: "8px 6px 8px 6px",
     borderRadius: 0,
     color: "#C3C9D9",
     backgroundColor: "#1D1F23",
@@ -271,7 +272,7 @@ type Track = {
   channelName: string;
   channelEditing?: boolean;
   pattern: Pattern;
-  url?: string;  // local file URL (for loading samples)
+  url: string;  // local file URL (for loading samples)
   triggered?: boolean;        // 👈 add this (default false)
 };
 
@@ -519,13 +520,9 @@ function App() {
     const seq = sequenceRef.current;
     const idsInState = new Set(seq.tracks.map(t => t.id));
 
-    console.log('idsInState', idsInState);
-
     // dispose removed
     Object.entries(instrumentsRef.current).forEach(([id, v]) => {
-      console.log('checking', id);
       if (!idsInState.has(id)) {
-        console.log('disposing', id);
         disposeTrackVoices(v);
         delete instrumentsRef.current[id];
       }
@@ -534,7 +531,7 @@ function App() {
     // create new
     seq.tracks.forEach((t) => {
       if (!instrumentsRef.current[t.id]) {
-        const url = t.url ?? (t.channelName === "KICK" ? "/samples/kick.wav" : "/samples/hat.wav");
+        const url = t.url;
         instrumentsRef.current[t.id] = createTrackVoices(url, t.channelVolume, t.channelEnabled);
       }
     });
@@ -753,7 +750,6 @@ function App() {
     setTrackProp(ti, t => ({ ...t, channelEditing: editing }));
   }
   function setChannelNameAt(ti: number, name: string) {
-    console.log("setChannelNameAt", ti, name);
     setTrackProp(ti, t => ({ ...t, channelName: name }));
   }
 
@@ -967,6 +963,9 @@ function App() {
     );
   }
 
+  function changeSample(track: Track, trackIndex: number) {
+  }
+
   return (
     <>
 
@@ -1098,9 +1097,15 @@ function App() {
         <TrackManagerSection>
         <Box display="flex" flexDirection="row" gap="15px">
 
-        <TrackManagerButton onClick={showAddTrack}>
-          <Box display="flex" flexDirection="row" alignContent="center" alignItems="center" justifyContent="center">
-            <AddIcon sx={{fontWeight: "900", fontSize: "220%"}} /><Typography>Add Track</Typography>
+        <TrackManagerButton sx={{fontSize: "122%"}} onClick={showAddTrack}>
+          <Box display="flex" 
+            flexDirection="row" 
+            alignContent="center" 
+            alignItems="center" 
+            justifyContent="center">
+            {/* <AddIcon sx={{fontWeight: "900", fontSize: "220%"}} /><Typography>Add Track</Typography> */}
+            <FontAwesomeIcon icon={faPlus} />
+            <Typography>Add Track</Typography>
           </Box>
         </TrackManagerButton>
 
@@ -1108,7 +1113,7 @@ function App() {
           rebuildGrid(timeSig.numerator, subdivisionsPerBeat)
         }}>
           <Box display="flex" flexDirection="row" alignContent="center" alignItems="center" justifyContent="center">
-            <DeleteOutlineIcon sx={{fontWeight: "900", fontSize: "220%"}} /><Typography>Clear Pattern</Typography>
+            <FontAwesomeIcon icon={faTrashCan} /><Typography>Clear Pattern</Typography>
           </Box>
         </TrackManagerButton>        
 
@@ -1135,7 +1140,9 @@ function App() {
                     top: "10px",
                     left: "10px",
                     zIndex: 3                    
-                  }}></span>
+                  }}>
+                  </span>
+
                   <ImageKnob 
                     disabled={!track.channelEnabled} 
                     src="/controls/BOS_knob_STGA_30X30_128f.png" 
@@ -1146,6 +1153,7 @@ function App() {
                     max={10} 
                     step={.1} 
                     onChange={(v) => { setTrackVolume(trackIndex, v)} }  />  
+
                   <Box ml={1} >
                     {track.channelEditing /* todo check for proper state here */ ?
                       <input
@@ -1169,10 +1177,9 @@ function App() {
                       :
                       <Typography 
                         onClick={() => {
-                          console.log("click");
                           track.channelEnabled && setChannelEditing(trackIndex, true)}
                         }
-                        style={{
+                        sx={{
                           textOverflow: "ellipsis",
                           overflow: "hidden",
                           width: "100px",
@@ -1184,13 +1191,14 @@ function App() {
                 </Box>
                 <Box display="flex" flexDirection="row" alignItems="center" gap={.5} alignContent={"center"}>
                   <Box>
-                  <ControlButton>
-                    <SwapHorizIcon style={{color: "#eee", padding: "0"}} />
+                  <ControlButton sx={{padding: "5px", fontWeight: "normal", fontSize: "115%", color: "#fff"}} onClick={() => {changeSample(track, trackIndex)}}>
+                    <FontAwesomeIcon icon={faExchange} />
                   </ControlButton>
                   </Box>
                   <Box>
-                  <ControlButton onClick={() => removeTrack(track.id)}>
-                    <ClearIcon style={{color: "#eee", padding: "0"}} />
+                  <ControlButton sx={{padding: "5px", fontWeight: "normal", fontSize: "115%", color: "#fff"}} onClick={() => removeTrack(track.id)}>
+                    <FontAwesomeIcon  icon={faXmark} />
+                    {/* <ClearIcon style={{color: "#eee", padding: "0"}} /> */}
                   </ControlButton>
                   </Box>
                   <Box sx={{
