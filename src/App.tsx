@@ -365,32 +365,54 @@ interface MyModalProps {
   onClose: (result: any) => void,
 }
 
+async function loadJsonFromAssets(filename: string): Promise<any | null> {
+  const url = `/assets/${filename}`; // Construct the URL to your JSON file
+  try {
+    const response = await fetch(url); // Make the HTTP request
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json(); // Parse the JSON response
+    return data;
+  } catch (error) {
+    console.error("Error loading JSON file:", error);
+    return null; // Or handle the error as appropriate
+  }
+}
+
+type Sample = {
+  name: string;
+  url: string;
+}
 const AddTrackModal: React.FC<MyModalProps> = ({ title, onClose }) => {
+  const [samples, setSamples] = useState<Sample[]>([]);
+  
+
     return (
         <Box>
             <Typography>{title}</Typography>
             <Button sx={{
-    width: "auto",
-    minWidth: "80px",
-    height: 36,
-    padding: "5px",         // removes extra padding
-    borderRadius: 0,
-    backgroundColor: "#1D1F23",
-    boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), 0 -2px 0 rgba(0, 0, 0, .5) inset",
-    position: "relative",
-    textShadow: "0 -2px 1px rgba(0, 0, 0, .85)",
-    transition: "all 80ms linear",
-    '&:hover': {
-      boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), inset 0 -2px 0 rgba(0, 0, 0, .7)",
-      textShadow: "0 0 7px rgba(195, 201, 217, .3)",
-      color: "#FFF",
-      backgroundolor: "#1F2125",   
-    },
-    '&:active': {
-      boxShadow:
-        "0 0 1px 1px rgba(0, 0, 0, .7), 0 2px 4px rgba(0, 0, 0, .5) inset",
-      backgroundColor: "#191B1F",
-    }              
+              width: "auto",
+              minWidth: "80px",
+              height: 36,
+              padding: "5px",         // removes extra padding
+              borderRadius: 0,
+              backgroundColor: "#1D1F23",
+              boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), 0 -2px 0 rgba(0, 0, 0, .5) inset",
+              position: "relative",
+              textShadow: "0 -2px 1px rgba(0, 0, 0, .85)",
+              transition: "all 80ms linear",
+              '&:hover': {
+                boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), inset 0 -2px 0 rgba(0, 0, 0, .7)",
+                textShadow: "0 0 7px rgba(195, 201, 217, .3)",
+                color: "#FFF",
+                backgroundolor: "#1F2125",   
+              },
+              '&:active': {
+                boxShadow:
+                  "0 0 1px 1px rgba(0, 0, 0, .7), 0 2px 4px rgba(0, 0, 0, .5) inset",
+                backgroundColor: "#191B1F",
+              }              
             }} onClick={() => onClose("Confirmed!")}>OK</Button>
         </Box>
     );
