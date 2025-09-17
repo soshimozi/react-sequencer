@@ -217,8 +217,8 @@ const OnOffIndicator: React.FC<{value: boolean, onChange: (value: boolean) => vo
               height: "10px",
               borderRadius: "50%",
               cursor: "pointer",
-              backgroundColor: disabled ? "#111" : "#fff",
-              boxShadow: disabled ? "none" : "0 0 8px rgba(195, 201, 217, .7)",
+              backgroundColor: value ? "#fff" : "#111",
+              boxShadow: value ? "0 0 8px rgba(195, 201, 217, .7)" : "none",
               top: "10px",
               left: "10px",
               zIndex: 3                    
@@ -242,6 +242,24 @@ const OnOffIndicator: React.FC<{value: boolean, onChange: (value: boolean) => vo
             //         zIndex: 3                    
             //       }}></span>
 }
+
+const TriggerIndicator : React.FC<{triggered?: boolean, disabled?: boolean}> = ({triggered, disabled = false}) => {
+return (
+      <Box sx={{
+        userSelect: "none",
+        width: "7px",
+        height: "25px",
+        backgroundColor: triggered ? "#FFF" : "#111",
+        boxShadow: triggered ? "0 0 5px rgba(195,201,217,.7)" : "none",
+        transition: "background-color 120ms linear, box-shadow 120ms linear",                    
+        borderRadius: "4px",
+        margin: "4px 5px 5px 9px",
+        opacity: disabled ? 0.4 : 1,
+        }}>
+      </Box>   
+  )
+}
+
 const sequenceSx = {
   "&::-webkit-scrollbar": {
     height: "13px",
@@ -347,12 +365,34 @@ interface MyModalProps {
   onClose: (result: any) => void,
 }
 
-const MyModal: React.FC<MyModalProps> = ({ title, onClose }) => {
+const AddTrackModal: React.FC<MyModalProps> = ({ title, onClose }) => {
     return (
-        <div>
-            <h2>{title}</h2>
-            <button onClick={() => onClose("Confirmed!")}>OK</button>
-        </div>
+        <Box>
+            <Typography>{title}</Typography>
+            <Button sx={{
+    width: "auto",
+    minWidth: "80px",
+    height: 36,
+    padding: "5px",         // removes extra padding
+    borderRadius: 0,
+    backgroundColor: "#1D1F23",
+    boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), 0 -2px 0 rgba(0, 0, 0, .5) inset",
+    position: "relative",
+    textShadow: "0 -2px 1px rgba(0, 0, 0, .85)",
+    transition: "all 80ms linear",
+    '&:hover': {
+      boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), inset 0 -2px 0 rgba(0, 0, 0, .7)",
+      textShadow: "0 0 7px rgba(195, 201, 217, .3)",
+      color: "#FFF",
+      backgroundolor: "#1F2125",   
+    },
+    '&:active': {
+      boxShadow:
+        "0 0 1px 1px rgba(0, 0, 0, .7), 0 2px 4px rgba(0, 0, 0, .5) inset",
+      backgroundColor: "#191B1F",
+    }              
+            }} onClick={() => onClose("Confirmed!")}>OK</Button>
+        </Box>
     );
 };
 
@@ -951,7 +991,7 @@ function App() {
   };
 
   const showAddTrack = () => {
-    modal.open(MyModal, { props: {title: "hello" }})
+    modal.open(AddTrackModal, { props: {title: "hello" }})
   };
 
   if(!audioReady) {
@@ -965,6 +1005,28 @@ function App() {
 
   function changeSample(track: Track, trackIndex: number) {
   }
+
+  function onPlayButtonClick()  {
+
+    setIsPlaying(!isPlaying);
+    playheadRef.current = { ...playheadRef.current, paused: isPlaying };
+
+    const transport = Tone.getTransport();
+    
+    if(isPlaying) {
+
+      transport.pause();
+    
+    } else {
+      
+      if (transport.state !== "started") {
+        transport.start();
+      }
+
+      loopRef.current?.start(0);
+    }
+  }
+  
 
   return (
     <>
@@ -985,21 +1047,7 @@ function App() {
       <SequencerSection>
         <TransportSection>
           <TransportButton
-            onClick={async () => {
-                // await Tone.start(); // resume audio context on first gesture
-
-                setIsPlaying(!isPlaying);
-                playheadRef.current = { ...playheadRef.current, paused: isPlaying };
-
-                if(isPlaying) {
-                  Tone.Transport.pause();
-                } else {
-                  if (Tone.Transport.state !== "started") {
-                    Tone.Transport.start();
-                  }
-                  loopRef.current?.start(0);
-                }
-              }}
+            onClick={onPlayButtonClick}
             >
 
               {isPlaying ? <PauseIcon sx={{color: "#eee", padding: "4px", height: 42, width: 42}} /> : <PlayArrowIcon sx={{color: "#eee", padding: "4px", height: 42, width: 42}} />}
@@ -1055,13 +1103,13 @@ function App() {
               color: "#C3C9D9",
               marginRight: "15px",
             }}>Time Signature: </Typography>
-          <SignatureInput
-            value={timeSig.numerator} 
-            onChange={(e) => {  
-              var value = Number(e.target.value);
-              setTimeSignature(value || 4, timeSig.denominator);
-            }}
-          />
+            <SignatureInput
+              value={timeSig.numerator} 
+              onChange={(e) => {  
+                var value = Number(e.target.value);
+                setTimeSignature(value || 4, timeSig.denominator);
+              }}
+            />
             <Typography sx={{          
               lineHeight: "35px",
               fontSize: "122%",
@@ -1125,24 +1173,7 @@ function App() {
             <TrackSection key={trackIndex} sx={{width: "fit-content"}} display="flex" flexDirection="row">
               <ControlsSection display="flex" flexDirection="row" alignItems="center" justifyContent="space-between" sx={{backgroundColor: track.channelEnabled ? "#282B32" : "#2B2B2B"}}>
                 <Box display="flex" flexDirection="row" alignItems="center" gap={.5} alignContent={"center"} position={"relative"}>
-                  <span 
-                  onClick={() => setTrackEnabled(trackIndex, !track.channelEnabled)}
-                  style={{
-                    userSelect: "none",
-                    display: "block",
-                    position: "absolute",
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "50%",
-                    cursor: "pointer",
-                    backgroundColor: track.channelEnabled ? "#fff" : "#111",
-                    boxShadow: track.channelEnabled ? "0 0 8px rgba(195, 201, 217, .7)" : "none",
-                    top: "10px",
-                    left: "10px",
-                    zIndex: 3                    
-                  }}>
-                  </span>
-
+                  <OnOffIndicator value={track.channelEnabled} onChange={(value) => { setTrackEnabled(trackIndex, value); } }></OnOffIndicator>
                   <ImageKnob 
                     disabled={!track.channelEnabled} 
                     src="/controls/BOS_knob_STGA_30X30_128f.png" 
@@ -1185,7 +1216,8 @@ function App() {
                           width: "100px",
                           lineHeight: "1.2",
                           color: track.channelEnabled ? "#FFF" : "#666",
-                          userSelect: "none"}}>{track.channelName}</Typography>
+                          userSelect: "none"}}>{track.channelName}
+                      </Typography>
                     }
                   </Box>
                 </Box>
@@ -1198,10 +1230,10 @@ function App() {
                   <Box>
                   <ControlButton sx={{padding: "5px", fontWeight: "normal", fontSize: "115%", color: "#fff"}} onClick={() => removeTrack(track.id)}>
                     <FontAwesomeIcon  icon={faXmark} />
-                    {/* <ClearIcon style={{color: "#eee", padding: "0"}} /> */}
                   </ControlButton>
                   </Box>
-                  <Box sx={{
+                  <TriggerIndicator triggered={track.triggered} disabled={!track.channelEnabled} />
+                  {/* <Box sx={{
                     userSelect: "none",
                     width: "7px",
                     height: "25px",
@@ -1212,7 +1244,7 @@ function App() {
                     margin: "4px 5px 5px 9px",
                     opacity: track.channelEnabled ? 1 : 0.4,
                     }}>
-                  </Box>              
+                  </Box>               */}
                 </Box>
               </ControlsSection>
               <PatternSection sx={{width: "fit-content"}} display="flex" flexDirection="row" gap="0">
