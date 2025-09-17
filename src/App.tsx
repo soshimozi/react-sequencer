@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button,  Container,  Input, Typography } from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StepCell } from './components/StepCell';
 import styled from '@emotion/styled';
 import ImageKnob from './components/ImageKnob';
@@ -224,23 +224,6 @@ const OnOffIndicator: React.FC<{value: boolean, onChange: (value: boolean) => vo
               zIndex: 3                    
             }}></span>
     )
-  
-            // <span 
-            //       onClick={() => setTrackEnabled(trackIndex, !track.channelEnabled)}
-            //       style={{
-            //         userSelect: "none",
-            //         display: "block",
-            //         position: "absolute",
-            //         width: "10px",
-            //         height: "10px",
-            //         borderRadius: "50%",
-            //         cursor: "pointer",
-            //         backgroundColor: track.channelEnabled ? "#fff" : "#111",
-            //         boxShadow: track.channelEnabled ? "0 0 8px rgba(195, 201, 217, .7)" : "none",
-            //         top: "10px",
-            //         left: "10px",
-            //         zIndex: 3                    
-            //       }}></span>
 }
 
 const TriggerIndicator : React.FC<{triggered?: boolean, disabled?: boolean}> = ({triggered, disabled = false}) => {
@@ -311,7 +294,19 @@ type Step = {
   triggered: boolean;
 };
 
+type Sample = {
+  name: string;
+  url: string;
+}
 
+type SampleGroup = {
+  group: string;
+  samples: Sample[]
+}
+
+type SampleGroupRespose = {
+  groups: SampleGroup[]
+}
 
 // ------ Audio plumbing (add near the top-level of the component file) ------
 type TrackVoices = {
@@ -365,7 +360,7 @@ interface MyModalProps {
   onClose: (result: any) => void,
 }
 
-async function loadJsonFromAssets(filename: string): Promise<any | null> {
+async function loadJsonFromAssets<T>(filename: string): Promise<T | null> {
   const url = `/assets/${filename}`; // Construct the URL to your JSON file
   try {
     const response = await fetch(url); // Make the HTTP request
@@ -373,20 +368,54 @@ async function loadJsonFromAssets(filename: string): Promise<any | null> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json(); // Parse the JSON response
-    return data;
+    return data as T;
   } catch (error) {
     console.error("Error loading JSON file:", error);
     return null; // Or handle the error as appropriate
   }
 }
 
-type Sample = {
-  name: string;
-  url: string;
+
+type SampleDataEntry = {
+  sample: string;
 }
+
 const AddTrackModal: React.FC<MyModalProps> = ({ title, onClose }) => {
-  const [samples, setSamples] = useState<Sample[]>([]);
+  const [groups, setGroups] = useState<SampleGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sampleData, setSampleData] = useState<string | undefined>();
+
   
+  const channel = new Tone.Channel({
+    volume: Tone.gainToDb(10),
+    mute: false,
+  }).toDestination();
+
+
+
+  useEffect(() => {
+    (async() => {
+      const data = await loadJsonFromAssets<SampleGroupRespose>("roland.json");
+      console.log('data ', data);
+
+      if(!data) return;
+
+      const sampleData = await loadJsonFromAssets<SampleDataEntry> (data.groups[0].samples[5].url);
+      setSampleData(sampleData?.sample);
+
+      console.log('sampleData', sampleData);
+
+    })();
+  }, [])
+
+  const playSample = () => {
+    if(!sampleData) return;
+    const player = new Tone.Player({ url: `data:audio/mpeg;base64,${sampleData}`, autostart: true, fadeOut: 0.005}).connect(channel);
+    setTimeout(() => {
+      try { player.stop(); player.dispose(); }
+      catch { }
+    }, 1000);
+    }
 
     return (
         <Box>
@@ -414,6 +443,29 @@ const AddTrackModal: React.FC<MyModalProps> = ({ title, onClose }) => {
                 backgroundColor: "#191B1F",
               }              
             }} onClick={() => onClose("Confirmed!")}>OK</Button>
+                        <Button sx={{
+              width: "auto",
+              minWidth: "80px",
+              height: 36,
+              padding: "5px",         // removes extra padding
+              borderRadius: 0,
+              backgroundColor: "#1D1F23",
+              boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), 0 -2px 0 rgba(0, 0, 0, .5) inset",
+              position: "relative",
+              textShadow: "0 -2px 1px rgba(0, 0, 0, .85)",
+              transition: "all 80ms linear",
+              '&:hover': {
+                boxShadow: "0 0 2px 1px rgba(0, 0, 0, .8), inset 0 -2px 0 rgba(0, 0, 0, .7)",
+                textShadow: "0 0 7px rgba(195, 201, 217, .3)",
+                color: "#FFF",
+                backgroundolor: "#1F2125",   
+              },
+              '&:active': {
+                boxShadow:
+                  "0 0 1px 1px rgba(0, 0, 0, .7), 0 2px 4px rgba(0, 0, 0, .5) inset",
+                backgroundColor: "#191B1F",
+              }              
+            }} onClick={playSample}>Play</Button>
         </Box>
     );
 };
